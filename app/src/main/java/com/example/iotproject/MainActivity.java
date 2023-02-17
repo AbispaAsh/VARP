@@ -35,9 +35,10 @@ public class MainActivity extends AppCompatActivity {
     private SensorEventListener lightEventListener;
     private TextView textView;
     private float maxValue;
+    private int currentLower=0;
+    private int currentUpper=20;
 
     private int prevValue;
-    public String url;
     private Button btnScan;
     private Button btnDscnct;
     public String postUrl="";
@@ -81,9 +82,33 @@ public class MainActivity extends AppCompatActivity {
 //                root.setBackgroundColor(Color.rgb(newValue, newValue, newValue));
 
                 if(postUrl.length() != 0) {
-                    if (Math.abs(prevValue - (int) value) > 1000) {
-                        prevValue = (int) value;
-                        int brightness = prevValue / 400;
+                    if ((int) value < currentLower || (int) value >currentUpper){
+                        int brightness = 0;
+                        if((int) value > 1000) {
+                            brightness = 100;
+                            currentLower = 1000;
+                            currentUpper = 40000;
+                        } else if ((int) value > 500) {
+                            brightness = 85;
+                            currentLower = 500;
+                            currentUpper = 1000;
+                        } else if ((int) value > 350) {
+                            brightness = 65;
+                            currentLower = 350;
+                            currentUpper = 500;
+                        } else if ((int) value > 50) {
+                            brightness = 45;
+                            currentLower = 50;
+                            currentUpper = 350;
+                        } else if ((int) value > 20) {
+                            brightness = 20;
+                            currentLower = 20;
+                            currentUpper = 50;
+                        } else {
+                            brightness = 0;
+                            currentLower = 0;
+                            currentUpper = 20;
+                        }
                         postBody = "{\n" +
                                 "    \"luminosity\": \"" + brightness + "\"" +
                                 "}";
@@ -93,6 +118,18 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
+//                    if (Math.abs(prevValue - (int) value) > 1000) {
+//                        prevValue = (int) value;
+//                        int brightness = prevValue / 400;
+//                        postBody = "{\n" +
+//                                "    \"luminosity\": \"" + brightness + "\"" +
+//                                "}";
+//                        try {
+//                            requestRun(postUrl, postBody);
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
                 }
 
             }

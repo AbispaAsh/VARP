@@ -14,6 +14,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,7 +43,8 @@ public class MainActivity extends AppCompatActivity {
 
     private int prevValue;
     private ConstraintLayout root;
-    private Button btnScan;
+//    private Button btnScan;
+    private ImageButton btnScan;
     private Button btnDscnct;
     public String postUrl="";
     public String postBody="{\n" +
@@ -59,7 +61,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         root = findViewById(R.id.root);
         textView = findViewById(R.id.textView);
-        btnScan = findViewById(R.id.button);
+//        btnScan = findViewById(R.id.button);
+        btnScan = findViewById(R.id.imageButton2);
+
         btnDscnct = findViewById(R.id.buttonD);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);

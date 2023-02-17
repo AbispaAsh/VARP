@@ -3,8 +3,10 @@ package com.example.iotproject;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -39,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentUpper=20;
 
     private int prevValue;
+    private ConstraintLayout root;
     private Button btnScan;
     private Button btnDscnct;
     public String postUrl="";
@@ -54,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        root = findViewById(R.id.root);
         textView = findViewById(R.id.textView);
         btnScan = findViewById(R.id.button);
         btnDscnct = findViewById(R.id.buttonD);
@@ -70,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
 
         // max value for light sensor
         maxValue = lightSensor.getMaximumRange();
-
         lightEventListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent sensorEvent) {
@@ -78,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 //                getSupportActionBar().setTitle("Luminosity : " + value + " lx");
                 textView.setText("Luminosity : " + value + " lx");
                 // between 0 and 255
-                int newValue = (int) (255f * value / maxValue);
+//                int newValue = (int) (255f * value / maxValue);
 //                root.setBackgroundColor(Color.rgb(newValue, newValue, newValue));
 
                 if(postUrl.length() != 0) {

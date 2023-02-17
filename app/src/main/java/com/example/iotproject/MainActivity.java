@@ -39,7 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private int prevValue;
     public String url;
     private Button btnScan;
-    public String postUrl;
+    private Button btnDscnct;
+    public String postUrl="";
     public String postBody="{\n" +
             "    \"name\": \"morpheus\",\n" +
             "    \"job\": \"leader\"\n" +
@@ -54,10 +55,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.textView);
         btnScan = findViewById(R.id.button);
+        btnDscnct = findViewById(R.id.buttonD);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-
+        btnDscnct.setEnabled(false);
         btnScan.setOnClickListener(v->{scanCode();});
+        btnDscnct.setOnClickListener(v->{disconnect();});
 
         if (lightSensor == null) {
             Toast.makeText(this, "The device has no light sensor !", Toast.LENGTH_SHORT).show();
@@ -77,17 +80,18 @@ public class MainActivity extends AppCompatActivity {
                 int newValue = (int) (255f * value / maxValue);
 //                root.setBackgroundColor(Color.rgb(newValue, newValue, newValue));
 
-
-                if(Math.abs(prevValue - (int)value)>1000){
-                    prevValue = (int)value;
-                    int brightness = prevValue / 400;
-                    postBody="{\n" +
-                            "    \"luminosity\": \""+brightness+"\"" +
-                            "}";
-                    try {
-                        requestRun(postUrl,postBody);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                if(postUrl.length() != 0) {
+                    if (Math.abs(prevValue - (int) value) > 1000) {
+                        prevValue = (int) value;
+                        int brightness = prevValue / 400;
+                        postBody = "{\n" +
+                                "    \"luminosity\": \"" + brightness + "\"" +
+                                "}";
+                        try {
+                            requestRun(postUrl, postBody);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
@@ -101,6 +105,28 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void disconnect() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+//        builder.setTitle("Result");
+        try{
+            String cnctURL = postUrl + "disconnect";
+            requestConnect(cnctURL);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(postUrl);
+        builder.setMessage("Disconnected");
+        postUrl = "";
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
+        {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i)
+            {
+                dialogInterface.dismiss();
+            }
+        }).show();
+        btnDscnct.setEnabled(false);
+    }
     private void scanCode(){
         ScanOptions options = new ScanOptions();
         options.setPrompt("Volume up to flash on");
@@ -114,9 +140,16 @@ public class MainActivity extends AppCompatActivity {
     {
         if(result.getContents() !=null)
         {
-            postUrl = "http://"+result.getContents()+"/";
+            postUrl = result.getContents();
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("Result");
+            try{
+                String cnctURL = postUrl + "connect";
+                requestConnect(cnctURL);
+                btnDscnct.setEnabled(true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             System.out.println(postUrl);
             builder.setMessage(result.getContents());
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
@@ -127,14 +160,37 @@ public class MainActivity extends AppCompatActivity {
                     dialogInterface.dismiss();
                 }
             }).show();
+
+
+
         }
     });
+
+    void requestConnect(String cnctUrl) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder()
+                .url(cnctUrl)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                call.cancel();
+                System.out.println(cnctUrl);
+                System.out.println("what");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Log.d("TAG",response.body().string());
+                System.out.println("Yes");
+            }
+        });
+    }
     void requestRun(String postUrl,String postBody) throws IOException {
         //System.out.println("HERE~~");
         OkHttpClient client = new OkHttpClient();
-
         RequestBody body = RequestBody.create(postBody,JSON);
-
         Request request = new Request.Builder()
                 .url(postUrl)
                 .post(body)
@@ -158,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(lightEventListener, lightSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        sensorManager.registerListener(lightEventListener, lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override

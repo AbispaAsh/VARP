@@ -1,2 +1,2 @@
 # VARP
-AutoBrightness control for laptop
+AutoBrightness for laptop

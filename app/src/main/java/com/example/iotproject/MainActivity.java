@@ -4,6 +4,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 
 import android.content.DialogInterface;
 import android.graphics.Color;
@@ -15,7 +16,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
+import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,9 +51,18 @@ public class MainActivity extends AppCompatActivity {
 
     private int prevValue;
     private ConstraintLayout root;
+    private ConstraintLayout connectWidget;
+    private ConstraintLayout deviceDisplay;
 //    private Button btnScan;
     private ImageButton btnScan;
     private Button btnDscnct;
+
+    private SeekBar brightBar;
+
+    private Switch autoSwitch;
+
+    public boolean autoFlag = true;
+    private boolean firstFlag = true;
     public String postUrl="";
     public String postBody="{\n" +
             "    \"name\": \"morpheus\",\n" +
@@ -64,17 +77,61 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         root = findViewById(R.id.root);
+        connectWidget = findViewById(R.id.connectWidget);
+        deviceDisplay = findViewById(R.id.deviceDisplay);
         textView = findViewById(R.id.textView);
         connectedView = findViewById(R.id.connectedView);
-//        btnScan = findViewById(R.id.button);
         btnScan = findViewById(R.id.imageButton2);
 
         btnDscnct = findViewById(R.id.buttonD);
+        brightBar = findViewById(R.id.seekBar);
+        autoSwitch = findViewById(R.id.autoSwitch);
+
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
         btnDscnct.setEnabled(false);
+        brightBar.setEnabled(false);
         btnScan.setOnClickListener(v->{scanCode();});
         btnDscnct.setOnClickListener(v->{disconnect();});
+        autoSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                autoFlag = isChecked;
+                if(isChecked){
+                    brightBar.setEnabled(false);
+                    firstFlag = true;
+                } else {
+                    brightBar.setEnabled(true);
+                }
+            }
+        });
+
+        brightBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                if(!autoFlag){
+                    postBody = "{\n" +
+                            "    \"luminosity\": \"" + seekBar.getProgress() + "\"" +
+                            "}";
+                    try {
+                        requestRun(postUrl, postBody);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress,boolean fromUser) {
+                // TODO Auto-generated method stub
+
+            }
+        });
 
         if (lightSensor == null) {
             Toast.makeText(this, "The device has no light sensor !", Toast.LENGTH_SHORT).show();
@@ -83,18 +140,15 @@ public class MainActivity extends AppCompatActivity {
 
         // max value for light sensor
         maxValue = lightSensor.getMaximumRange();
+
         lightEventListener = new SensorEventListener() {
             @Override
             public void onSensorChanged(SensorEvent sensorEvent) {
                 float value = sensorEvent.values[0];
-//                getSupportActionBar().setTitle("Luminosity : " + value + " lx");
                 textView.setText("Luminosity : " + value + " lx");
-                // between 0 and 255
-//                int newValue = (int) (255f * value / maxValue);
-//                root.setBackgroundColor(Color.rgb(newValue, newValue, newValue));
 
                 if(postUrl.length() != 0) {
-                    if ((int) value < currentLower || (int) value >currentUpper){
+                    if (((int) value < currentLower || (int) value >currentUpper )&& autoFlag){
                         int brightness = 0;
                         if((int) value > 1000) {
                             brightness = 100;
@@ -124,28 +178,28 @@ public class MainActivity extends AppCompatActivity {
                         postBody = "{\n" +
                                 "    \"luminosity\": \"" + brightness + "\"" +
                                 "}";
+                        brightBar.setProgress(brightness, true);
                         try {
                             requestRun(postUrl, postBody);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    } else if(!autoFlag) {
+                        if(firstFlag){
+                            firstFlag = false;
+                            postBody = "{\n" +
+                                    "    \"luminosity\": \"" + brightBar.getProgress() + "\"" +
+                                    "}";
+                            try {
+                                requestRun(postUrl, postBody);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
                     }
-//                    if (Math.abs(prevValue - (int) value) > 1000) {
-//                        prevValue = (int) value;
-//                        int brightness = prevValue / 400;
-//                        postBody = "{\n" +
-//                                "    \"luminosity\": \"" + brightness + "\"" +
-//                                "}";
-//                        try {
-//                            requestRun(postUrl, postBody);
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
                 }
-
             }
-
             @Override
             public void onAccuracyChanged(Sensor sensor, int i) {
 
@@ -176,6 +230,13 @@ public class MainActivity extends AppCompatActivity {
         }).show();
         btnDscnct.setEnabled(false);
         btnDscnct.setVisibility(View.INVISIBLE);
+        connectWidget.setVisibility(View.GONE);
+        ConstraintSet set = new ConstraintSet();
+        set.clone(root);
+        set.setVerticalBias(R.id.deviceDisplay,0.105f);
+        set.applyTo(root);
+
+
     }
     private void scanCode(){
         ScanOptions options = new ScanOptions();
@@ -257,6 +318,17 @@ public class MainActivity extends AppCompatActivity {
                             requestConnect(cnctURL);
                             btnDscnct.setEnabled(true);
                             btnDscnct.setVisibility(View.VISIBLE);
+                            MainActivity.this.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    //Handle UI here
+                                    connectWidget.setVisibility(View.VISIBLE);
+                                    ConstraintSet set = new ConstraintSet();
+                                    set.clone(root);
+                                    set.setVerticalBias(R.id.deviceDisplay,0.755f);
+                                    set.applyTo(root);
+                                }
+                            });
                         } catch (IOException e) {
                             e.printStackTrace();
                         }

@@ -10,6 +10,7 @@ class QRCodeGenerator:
         self.root.configure(pady=17)
         p = ImageTk.PhotoImage(file = 'icon2.png')
         self.root.iconphoto(False, p)
+        self.root.call('wm', 'iconphoto', self.root._w, p)
         self.root.title("VARP")
         self.qr_code_widget = tk.Label(self.root,borderwidth=3, relief="ridge")
         self.qr_code_widget.pack()

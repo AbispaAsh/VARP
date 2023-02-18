@@ -22,9 +22,11 @@ import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
 import java.io.IOException;
+import java.net.URL;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -37,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private Sensor lightSensor;
     private SensorEventListener lightEventListener;
     private TextView textView;
+    private TextView connectedView;
     private float maxValue;
     private int currentLower=0;
     private int currentUpper=20;
@@ -61,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         root = findViewById(R.id.root);
         textView = findViewById(R.id.textView);
+        connectedView = findViewById(R.id.connectedView);
 //        btnScan = findViewById(R.id.button);
         btnScan = findViewById(R.id.imageButton2);
 
@@ -174,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
     private void scanCode(){
         ScanOptions options = new ScanOptions();
         options.setPrompt("Volume up to flash on");
-        options.setBeepEnabled(true);
+        options.setBeepEnabled(false);
         options.setOrientationLocked(true);
         options.setCaptureActivity(CaptureAct.class);
         barLauncher.launch(options);
@@ -185,31 +189,91 @@ public class MainActivity extends AppCompatActivity {
         if(result.getContents() !=null)
         {
             postUrl = result.getContents();
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("Result");
-            try{
-                String cnctURL = postUrl + "connect";
-                requestConnect(cnctURL);
-                btnDscnct.setEnabled(true);
+            try {
+                requestTest();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            System.out.println(postUrl);
-            builder.setMessage(result.getContents());
-            builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
-            {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i)
-                {
-                    dialogInterface.dismiss();
-                }
-            }).show();
+
 
 
 
         }
     });
 
+    void invalidQR() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setMessage("Invalid QR");
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
+        {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i)
+            {
+                dialogInterface.dismiss();
+            }
+        }).show();
+    }
+    void requestTest() throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        try {
+            new URL(postUrl).toURI();
+        } catch (Exception e) {
+            invalidQR();
+            return;
+        }
+
+        Request request = new Request.Builder()
+                .url(postUrl)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                call.cancel();
+                System.out.println("what");
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //Handle UI here
+                        invalidQR();
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Log.d("TAG",response.body().string());
+                System.out.println("Yes");
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //Handle UI here
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+//            builder.setTitle("Result");
+                        try{
+                            String cnctURL = postUrl + "connect";
+                            requestConnect(cnctURL);
+                            btnDscnct.setEnabled(true);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println(postUrl);
+                        String text = "Connected to : " + postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
+                        builder.setMessage(text);
+                        builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
+                        {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i)
+                            {
+                                dialogInterface.dismiss();
+                            }
+                        }).show();
+                    }
+                });
+
+            }
+        });
+    }
     void requestConnect(String cnctUrl) throws IOException {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
@@ -228,6 +292,19 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 Log.d("TAG",response.body().string());
                 System.out.println("Yes");
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //Handle UI here
+                        if(cnctUrl.endsWith("disconnect")){
+                            connectedView.setText("None");
+                        } else {
+                            String text = postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
+                            connectedView.setText(text);
+                        }
+                    }
+                });
+
             }
         });
     }

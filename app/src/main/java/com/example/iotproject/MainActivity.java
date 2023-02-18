@@ -13,6 +13,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -174,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }).show();
         btnDscnct.setEnabled(false);
+        btnDscnct.setVisibility(View.INVISIBLE);
     }
     private void scanCode(){
         ScanOptions options = new ScanOptions();
@@ -254,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
                             String cnctURL = postUrl + "connect";
                             requestConnect(cnctURL);
                             btnDscnct.setEnabled(true);
+                            btnDscnct.setVisibility(View.VISIBLE);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -297,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         //Handle UI here
                         if(cnctUrl.endsWith("disconnect")){
-                            connectedView.setText("None");
+                            connectedView.setText("Scan to Connect");
                         } else {
                             String text = postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
                             connectedView.setText(text);

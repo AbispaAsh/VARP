@@ -11,16 +11,15 @@ def ipWrite():
         f.write(host)
     
 @app.route('/', methods = ['GET'])
-def home():
-    data = jsonify({"data":"Hello"})
+def test():
+    data = jsonify({"data":"Test"})
     #sbc.set_brightness(int(data['luminosity']))
-    print("HELLO")
     return data
 
 @app.route('/', methods = ['POST'])
 def light():
     data = request.json
-    sbc.set_brightness(int(data['luminosity']))
+    sbc.fade_brightness(int(data['luminosity']))
     return data
 
 @app.route('/connect', methods = ['GET'])

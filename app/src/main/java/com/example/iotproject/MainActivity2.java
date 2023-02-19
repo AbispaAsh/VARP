@@ -47,6 +47,7 @@ public class MainActivity2 extends AppCompatActivity {
     private int currentUpper=20;
 
     private int prevValue;
+    private String connectionResponse = "";
     private ConstraintLayout root;
     private ConstraintLayout connectWidget;
     private ConstraintLayout deviceDisplay;
@@ -61,6 +62,7 @@ public class MainActivity2 extends AppCompatActivity {
     public boolean autoFlag = true;
     private boolean firstFlag = true;
     public String postUrl="";
+    public String controlUrl="";
     public String postBody="{\n" +
             "    \"name\": \"morpheus\",\n" +
             "    \"job\": \"leader\"\n" +
@@ -248,16 +250,12 @@ public class MainActivity2 extends AppCompatActivity {
     {
         if(result.getContents() !=null)
         {
-            postUrl = result.getContents();
+            controlUrl = result.getContents();
             try {
                 requestTest();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
-
-
         }
     });
 
@@ -273,17 +271,18 @@ public class MainActivity2 extends AppCompatActivity {
             }
         }).show();
     }
+
     void requestTest() throws IOException {
         OkHttpClient client = new OkHttpClient();
         try {
-            new URL(postUrl).toURI();
+            new URL(controlUrl).toURI();
         } catch (Exception e) {
             invalidQR();
             return;
         }
 
         Request request = new Request.Builder()
-                .url(postUrl)
+                .url(controlUrl)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
@@ -302,36 +301,47 @@ public class MainActivity2 extends AppCompatActivity {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                Log.d("TAG",response.body().string());
-                System.out.println("Yes");
+
+                if (response.body() != null) {
+                    connectionResponse = response.body().string();
+                    //Log.d("TAG",response.body().string());
+                    System.out.println("Yes");
+                }
                 MainActivity2.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+
+                        //System.out.println("WOWOWOWOW ; "+connectionResponse);
                         //Handle UI here
+                        String toConnect = connectionResponse.substring(connectionResponse.lastIndexOf('\"',connectionResponse.lastIndexOf('\"')-1)+1,connectionResponse.lastIndexOf('\"'));
                         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity2.this);
-//            builder.setTitle("Result");
-                        try{
-                            String cnctURL = postUrl + "connect";
-                            requestConnect(cnctURL);
-                            btnDscnct.setEnabled(true);
-                            btnDscnct.setVisibility(View.VISIBLE);
-                            MainActivity2.this.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    //Handle UI here
-                                    connectWidget.setVisibility(View.VISIBLE);
-                                    ConstraintSet set = new ConstraintSet();
-                                    set.clone(root);
-                                    set.setVerticalBias(R.id.deviceDisplay,0.755f);
-                                    set.applyTo(root);
-                                }
-                            });
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        if(toConnect.equals("Test")) {
+                            postUrl = controlUrl;
+                            try {
+                                String cnctURL = postUrl + "connect";
+                                requestConnect(cnctURL);
+                                btnDscnct.setEnabled(true);
+                                btnDscnct.setVisibility(View.VISIBLE);
+                                MainActivity2.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        //Handle UI here
+                                        connectWidget.setVisibility(View.VISIBLE);
+                                        ConstraintSet set = new ConstraintSet();
+                                        set.clone(root);
+                                        set.setVerticalBias(R.id.deviceDisplay, 0.755f);
+                                        set.applyTo(root);
+                                    }
+                                });
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println(postUrl);
+                            String text = "Connected to : " + postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
+                            builder.setMessage(text);
+                        } else {
+                            builder.setMessage("Device is connected to another remote");
                         }
-                        System.out.println(postUrl);
-                        String text = "Connected to : " + postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
-                        builder.setMessage(text);
                         builder.setPositiveButton("OK", new DialogInterface.OnClickListener()
                         {
                             @Override
@@ -364,15 +374,19 @@ public class MainActivity2 extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 Log.d("TAG",response.body().string());
                 System.out.println("Yes");
+
                 MainActivity2.this.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         //Handle UI here
+
                         if(cnctUrl.endsWith("disconnect")){
                             connectedView.setText("Scan to Connect");
+                            btnScan.setEnabled(true);
                         } else {
                             String text = postUrl.substring(postUrl.indexOf('/', postUrl.indexOf('/') + 1) + 1, postUrl.lastIndexOf(':'));
                             connectedView.setText(text);
+                            btnScan.setEnabled(false);
                         }
                     }
                 });

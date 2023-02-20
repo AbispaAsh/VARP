@@ -43,8 +43,8 @@ public class MainActivity2 extends AppCompatActivity {
     private TextView textView;
     private TextView connectedView;
     private float maxValue;
-    private int currentLower=0;
-    private int currentUpper=20;
+    private int currentLower=40000;
+    private int currentUpper=0;
 
     private int prevValue;
     private String connectionResponse = "";
@@ -99,6 +99,8 @@ public class MainActivity2 extends AppCompatActivity {
                     brightBar.setEnabled(false);
                     firstFlag = true;
                 } else {
+                    currentLower = 40000;
+                    currentUpper = 0;
                     brightBar.setEnabled(true);
                 }
             }

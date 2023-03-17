@@ -7,8 +7,13 @@ app = Flask(__name__)
 connectionEstablished = False
 
 def ipWrite():
-    ip_address = socket.gethostbyname(socket.gethostname())
+    ip_address=""
+    ip_addresses = socket.getaddrinfo(socket.gethostname(), None)
+    for a in ip_addresses:
+        if(a[4][0].startswith('192')):
+            ip_address = a[4][0]
     host = "http://"+ip_address+":8001/"
+    print(host)
     with open("connectorportal.txt", "w") as f:
         f.write(host)
     
